@@ -1,0 +1,39 @@
+version: "1.0"
+
+agents:
+  video-generator-agent:
+    name: "Video Generation Agent"
+    role: "Generate videos via Gemini"
+    mcp_servers:
+      - name: nexus-gemini-mcp
+        url: "http://localhost:8001"
+      - name: nexus-memory-mcp
+        url: "http://localhost:8002"
+    tools:
+      - name: generate_video
+        description: "Generate video with prompt, duration, style, format"
+      - name: check_status
+        description: "Poll video job status"
+      - name: retrieve_video
+        description: "Get video URL when complete"
+
+  code-scaffolder-agent:
+    name: "Code Scaffolder"
+    role: "Scaffold NEXUS microservices"
+    mcp_servers:
+      - name: nexus-gh-mcp
+        url: "http://localhost:8003"
+    tools:
+      - name: create_repo
+        description: "Create GitHub repo"
+      - name: create_workflow
+        description: "Wire CI/CD"
+
+  ops-monitor-agent:
+    name: "Operations Monitor"
+    role: "Monitor deployments"
+    mcp_servers:
+      - name: nexus-memory-mcp
+        url: "http://localhost:8002"
+      - name: nexus-gh-mcp
+        url: "http://localhost:8003"
