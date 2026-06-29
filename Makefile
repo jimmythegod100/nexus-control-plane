@@ -1,31 +1,36 @@
-.PHONY: help up down logs health init clean
+.PHONY: help up down restart logs health init clean verify-auth
 
 help:
 	@echo "NEXUS Control Plane"
-	@echo "  make up          Start services"
-	@echo "  make down        Stop services"
-	@echo "  make logs        Tail logs"
-	@echo "  make health      Check status"
-	@echo "  make clean       Remove volumes"
+	@echo "  make up            Start services"
+	@echo "  make down          Stop services"
+	@echo "  make restart       Restart services"
+	@echo "  make logs          Tail logs"
+	@echo "  make health        Run health checks"
+	@echo "  make init          Initialize database schema"
+	@echo "  make verify-auth   Verify GitHub GH_TOKEN"
+	@echo "  make clean         Remove volumes"
 
 up:
-	docker-compose up -d
-	@echo "Waiting for PostgreSQL..."
-	@until docker-compose exec -T postgres pg_isready -U nexus_user -d nexus > /dev/null 2>&1; do sleep 1; done
-	@echo "✓ PostgreSQL ready"
-	@echo "Waiting for Redis..."
-	@until docker-compose exec -T redis redis-cli ping > /dev/null 2>&1; do sleep 1; done
-	@echo "✓ Redis ready"
-	@echo "✓ NEXUS Control Plane running"
+	@bash scripts/startup.sh
 
 down:
-	docker-compose down
+	@bash scripts/shutdown.sh
+
+restart: down up
 
 logs:
 	docker-compose logs -f
 
 health:
-	docker-compose ps
+	@bash scripts/healthcheck.sh
+
+init:
+	@echo "Initializing database..."
+	@docker-compose exec -T postgres psql -U nexus_user -d nexus -f /docker-entrypoint-initdb.d/init.sql
+
+verify-auth:
+	@bash scripts/verify-github-auth.sh
 
 clean:
 	docker-compose down -v

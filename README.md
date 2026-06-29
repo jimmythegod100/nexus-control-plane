@@ -31,11 +31,18 @@ make health
 ## Commands
 
 ```
-make up       - Start all services
-make down     - Stop all services
-make logs     - View logs
-make health   - Check status
-make clean    - Remove everything
+make up            - Start all services
+make down          - Stop all services
+make restart       - Restart all services
+make logs          - View logs
+make health        - Check PostgreSQL + Redis
+make verify-auth   - Verify GH_TOKEN (Cloud Agent secret)
+make clean         - Remove everything
 ```
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Setup Guide](docs/SETUP.md)
 
 ## Next: Phase 2 - Gemini MCP Server
