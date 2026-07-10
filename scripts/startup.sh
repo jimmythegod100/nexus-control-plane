@@ -25,4 +25,9 @@ until docker-compose exec -T redis redis-cli ping > /dev/null 2>&1; do
 done
 echo "✅ Redis ready"
 
+echo "📥 Ensuring media ingestion (Desktop Media_Drop → JTGSSD)..."
+if [[ -x "${SCRIPT_DIR}/media-ingest-setup.sh" ]]; then
+  bash "${SCRIPT_DIR}/media-ingest-setup.sh" || echo "WARN: media-ingest-setup failed"
+fi
+
 echo "✅ NEXUS Control Plane is running!"

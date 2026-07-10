@@ -58,3 +58,45 @@ CREATE TABLE IF NOT EXISTS github_repos (
     description TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Per-platform upload status for cross-posting batches
+CREATE TABLE IF NOT EXISTS platform_uploads (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    batch_id UUID NOT NULL,
+    file_path TEXT NOT NULL,
+    platform VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    post_url TEXT,
+    error_message TEXT,
+    retry_count INTEGER DEFAULT 0,
+    execution_node VARCHAR(100),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    completed_at TIMESTAMP,
+    UNIQUE (batch_id, platform)
+);
+
+CREATE INDEX idx_platform_uploads_batch_id ON platform_uploads(batch_id);
+CREATE INDEX idx_platform_uploads_status ON platform_uploads(status);
+CREATE INDEX idx_platform_uploads_platform ON platform_uploads(platform);
+CREATE INDEX idx_platform_uploads_execution_node ON platform_uploads(execution_node);
+
+CREATE TABLE IF NOT EXISTS upload_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    batch_id UUID NOT NULL,
+    file_path TEXT NOT NULL,
+    platform VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    post_url TEXT,
+    error_message TEXT,
+    retry_count INTEGER DEFAULT 0,
+    execution_node VARCHAR(100),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    archived_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_upload_history_batch_id ON upload_history(batch_id);
+CREATE INDEX idx_upload_history_platform ON upload_history(platform);
+CREATE INDEX idx_upload_history_archived_at ON upload_history(archived_at DESC);

@@ -4,6 +4,17 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: nexus-postgres
+    restart: unless-stopped
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - log_statement=mod
+      - -c
+      - log_connections=on
+      - -c
+      - log_disconnections=on
     environment:
       POSTGRES_USER: nexus_user
       POSTGRES_PASSWORD: nexus_password
@@ -24,6 +35,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: nexus-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --appendfsync everysec
     ports:
       - "6379:6379"
     volumes:
@@ -33,6 +46,83 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - nexus-network
+
+  gemini-mcp:
+    build:
+      context: ../nexus-gemini-mcp
+      dockerfile: Dockerfile
+    container_name: nexus-gemini-mcp
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql://nexus_user:nexus_password@postgres:5432/nexus
+      REDIS_URL: redis://redis:6379/0
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-test-key}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - nexus-network
+
+  memory-mcp:
+    build:
+      context: ../nexus-memory-mcp
+      dockerfile: Dockerfile
+    container_name: nexus-memory-mcp
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: postgresql://nexus_user:nexus_password@postgres:5432/nexus
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - nexus-network
+
+  gh-mcp:
+    build:
+      context: ../nexus-gh-mcp
+      dockerfile: Dockerfile
+    container_name: nexus-gh-mcp
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-test-token}
+      GITHUB_OWNER: ${GITHUB_OWNER:-jimmythegod100}
+    networks:
+      - nexus-network
+
+  video-service:
+    build:
+      context: ../nexus-video-service
+      dockerfile: Dockerfile
+    container_name: nexus-video-service
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      GEMINI_MCP_URL: http://gemini-mcp:8001
+      MEMORY_MCP_URL: http://memory-mcp:8002
+    depends_on:
+      gemini-mcp:
+        condition: service_started
+      memory-mcp:
+        condition: service_started
+      redis:
+        condition: service_healthy
     networks:
       - nexus-network
 

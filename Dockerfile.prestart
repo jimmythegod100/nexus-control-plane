@@ -1,0 +1,6 @@
+FROM alpine:3.20
+RUN apk add --no-cache bash curl podman-cli jq openssh-client
+COPY scripts/benchmark-suite.sh /scripts/benchmark-suite.sh
+RUN chmod +x /scripts/benchmark-suite.sh
+WORKDIR /scripts
+ENTRYPOINT ["/scripts/benchmark-suite.sh"]
