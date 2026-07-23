@@ -1,24 +1,32 @@
 #!/usr/bin/env bash
 # External MCP watchdog — outside podman lifecycle; polls :8001/:8002/:8003 every 60s.
+# Honors ~/.organized/state/nexus-external-watchdog-disabled (orcusctl pause).
 set -euo pipefail
 
 CONTROL_PLANE="$(cd "$(dirname "$0")/.." && pwd)"
+ORG="${HOME}/.organized"
+KILL_SWITCH="${ORG}/state/nexus-external-watchdog-disabled"
 LOG="/var/log/nexus-recovery.log"
-FALLBACK_LOG="${HOME}/.organized/logs/nexus-recovery.log"
+FALLBACK_LOG="${ORG}/logs/nexus-recovery.log"
 INTERVAL="${NEXUS_WATCHDOG_INTERVAL:-60}"
 TIMEOUT_SEC="${NEXUS_WATCHDOG_TIMEOUT:-15}"
 COOLDOWN_SEC="${NEXUS_RECOVERY_COOLDOWN:-300}"
-LAST_RECOVERY_DIR="${HOME}/.organized/state/nexus-watchdog-recovery"
+LAST_RECOVERY_DIR="${ORG}/state/nexus-watchdog-recovery"
 DOCKER_HOST="${DOCKER_HOST:-unix:///var/folders/rh/5c_p30l11tj7y9jf_ss1hmy80000gn/T/podman/podman-machine-default-api.sock}"
 export DOCKER_HOST
 
-mkdir -p "$(dirname "$FALLBACK_LOG")"
+mkdir -p "$(dirname "$FALLBACK_LOG")" "${ORG}/state"
 if [[ ! -w "$LOG" ]] 2>/dev/null; then
   touch "$FALLBACK_LOG" 2>/dev/null || true
   LOG="$FALLBACK_LOG"
 fi
 
 log() { printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" | tee -a "$LOG"; }
+
+if [[ -f "$KILL_SWITCH" ]]; then
+  log "paused via kill switch — exit"
+  exit 0
+fi
 
 declare -A PORT_SERVICE=(
   [8001]=gemini-mcp
